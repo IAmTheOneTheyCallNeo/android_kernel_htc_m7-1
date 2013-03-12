@@ -21,6 +21,7 @@
 #include <linux/workqueue.h>
 #include <linux/jiffies.h>
 #include <linux/gpio.h>
+#include <linux/wakelock.h>
 #include <mach/peripheral-loader.h>
 #include <linux/io.h>
 #include <mach/msm_iomap.h>
@@ -53,6 +54,7 @@ static struct {
 	void		(*tm_notify)(struct device *, int);
 	struct wcnss_wlan_config wlan_config;
 	struct delayed_work wcnss_work;
+	struct wake_lock wcnss_wake_lock;
 } *penv = NULL;
 
 static ssize_t wcnss_serial_number_show(struct device *dev,
@@ -332,6 +334,20 @@ static int wcnss_wlan_resume(struct device *dev)
 	return 0;
 }
 
+void wcnss_prevent_suspend()
+{
+	if (penv)
+		wake_lock(&penv->wcnss_wake_lock);
+}
+EXPORT_SYMBOL(wcnss_prevent_suspend);
+
+void wcnss_allow_suspend()
+{
+	if (penv)
+		wake_unlock(&penv->wcnss_wake_lock);
+}
+EXPORT_SYMBOL(wcnss_allow_suspend);
+
 static int
 wcnss_trigger_config(struct platform_device *pdev)
 {
@@ -404,7 +420,12 @@ wcnss_trigger_config(struct platform_device *pdev)
 	if (ret)
 		goto fail_sysfs;
 
+        wake_lock_init(&penv->wcnss_wake_lock, WAKE_LOCK_SUSPEND, "wcnss");
+
 	return 0;
+
+fail_wake:
+	wake_lock_destroy(&penv->wcnss_wake_lock);
 
 fail_sysfs:
 fail_res:
