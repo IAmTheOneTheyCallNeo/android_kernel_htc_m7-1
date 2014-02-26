@@ -170,7 +170,6 @@ extern void hdmi_hpd_feature(int enable);
 extern unsigned int engineerid;
 #endif
 
-extern unsigned htc_get_skuid(void);
 
 #define _GET_REGULATOR(var, name) do {				\
 	var = regulator_get(NULL, name);			\
@@ -256,7 +255,6 @@ enum {
 int set_two_phase_freq(int cpufreq);
 #endif
 
-int set_input_event_min_freq_by_cpu(int cpu_nr, int cpufreq);
 
 #ifdef CONFIG_KERNEL_PMEM_EBI_REGION
 static unsigned pmem_kernel_ebi1_size = MSM_PMEM_KERNEL_EBI1_SIZE;
@@ -4948,19 +4946,9 @@ static void nfc_gpio_deinit(void)
 #define WITHOUT_NFC_CHIP_T6U_CHINA 0x00037E08
 static int nfc_init_check(void)
 {
-	unsigned int htc_skuid = 0;
-
 	
-	htc_skuid = htc_get_skuid();
-
-	if ( WITHOUT_NFC_CHIP_T6U_CHINA == htc_skuid ) {
-		printk(KERN_INFO "%s: htc_skuid=[0x%08X], without NFC chip\n", __func__, htc_skuid);
-		return 0;
-	}
-	else {
-		printk(KERN_INFO "%s: htc_skuid=[0x%08X], with NFC chip.\n", __func__, htc_skuid);
-		return 1;
-	}
+	return 1;
+	
 }
 
 static struct pn544_i2c_platform_data nfc_platform_data = {
@@ -5419,17 +5407,6 @@ static void __init t6ul_cdp_init(void)
 	t6china_init_cam();
 #endif
 
-#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
-        if(!cpu_is_krait_v1())
-                set_two_phase_freq(1134000);
-#endif
-	set_input_event_min_freq_by_cpu(1, 1134000);
-	set_input_event_min_freq_by_cpu(2, 1026000);
-	set_input_event_min_freq_by_cpu(3, 810000);
-	set_input_event_min_freq_by_cpu(4, 810000);
-
-	
-	
 	if (!(board_mfg_mode() == 6 || board_mfg_mode() == 7))
 		t6ul_add_usb_devices();
 }
