@@ -1731,8 +1731,8 @@ static struct android_usb_platform_data android_usb_pdata = {
 	.usb_diag_interface = "diag,diag_mdm",
 	.fserial_init_string = "HSIC:modem,tty,tty:autobot,tty:serial,tty:autobot,tty:acm",
 	.serial_number = "000000000000",
-	.nluns		= 1,
 #endif
+	.nluns		= 2,
 };
 
 static struct platform_device android_usb_device = {
