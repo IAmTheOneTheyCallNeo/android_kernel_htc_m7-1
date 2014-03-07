@@ -24,15 +24,7 @@
 #include "../sound/soc/msm/msm-pcm-routing.h"
 #include "../sound/soc/msm/msm-compr-q6.h"
 
-#if defined(CONFIG_MACH_T6_UL)
 #include "board-t6ul.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6wl.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6whl.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6uhl.h"
-#endif
 
 static atomic_t q6_effect_mode = ATOMIC_INIT(-1);
 extern unsigned int system_rev;

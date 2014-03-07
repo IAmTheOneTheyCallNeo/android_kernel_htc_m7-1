@@ -13,15 +13,7 @@
 
 #include <linux/regulator/pm8xxx-regulator.h>
 
-#if defined(CONFIG_MACH_T6_UL)
 #include "board-t6ul.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6wl.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6whl.h"
-#elif defined(CONFIG_MACH_DUMMY)
-#include "board-t6uhl.h"
-#endif
 
 #define VREG_CONSUMERS(_id) \
 	static struct regulator_consumer_supply vreg_consumers_##_id[]

@@ -23,7 +23,7 @@
 #include <linux/mfd/pm8xxx/pm8921.h>
 #include <mach/htc_4335_wl_reg.h>
 
-#include "board-t6.h"
+#include "board-t6ul.h"
 
 #include <linux/miscdevice.h>
 #include <asm/uaccess.h>
