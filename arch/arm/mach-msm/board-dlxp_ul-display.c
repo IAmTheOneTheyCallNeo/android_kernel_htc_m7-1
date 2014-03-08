@@ -98,7 +98,7 @@ static struct platform_device msm_fb_device = {
 	.dev.platform_data = &msm_fb_pdata,
 };
 
-void __init monarudo_allocate_fb_region(void)
+void __init dlxp_ul_allocate_fb_region(void)
 {
 	void *addr;
 	unsigned long size;
@@ -278,7 +278,7 @@ static struct platform_device wfd_device = {
 };
 #endif
 
-void __init monarudo_mdp_writeback(struct memtype_reserve* reserve_table)
+void __init dlxp_ul_mdp_writeback(struct memtype_reserve* reserve_table)
 {
 	mdp_pdata.ov0_wb_size = MSM_FB_OVERLAY0_WRITEBACK_SIZE;
 	mdp_pdata.ov1_wb_size = MSM_FB_OVERLAY1_WRITEBACK_SIZE;
@@ -1022,7 +1022,7 @@ static void __exit pwm_i2c_remove(void)
 	i2c_del_driver(&pwm_i2c_driver);
 }
 
-void __init monarudo_init_fb(void)
+void __init dlxp_ul_init_fb(void)
 {
 
 	platform_device_register(&msm_fb_device);
