@@ -444,10 +444,7 @@ static struct ion_co_heap_pdata fw_co_dlxp_ul_ion_pdata = {
 	.fixed_position = FIXED_LOW,
 };
 #endif
-
-static struct ion_platform_data ion_pdata = {
-	.nr = MSM_ION_HEAP_NUM,
-	.heaps = {
+struct ion_platform_heap apq8064_heaps[] = {
 		{
 			.id	= ION_SYSTEM_HEAP_ID,
 			.type	= ION_HEAP_TYPE_SYSTEM,
@@ -508,13 +505,16 @@ static struct ion_platform_data ion_pdata = {
 			.extra_data = (void *) &co_dlxp_ul_ion_pdata,
 		},
 #endif
-	}
+};
+static struct ion_platform_data apq8064_ion_pdata = {
+	.nr = MSM_ION_HEAP_NUM,
+	.heaps = apq8064_heaps,
 };
 
 static struct platform_device dlxp_ul_ion_dev = {
 	.name = "ion-msm",
 	.id = 1,
-	.dev = { .platform_data = &ion_pdata },
+	.dev = { .platform_data = &apq8064_ion_pdata },
 };
 #endif
 
@@ -548,59 +548,64 @@ static void __init apq8064_reserve_fixed_area(unsigned long fixed_area_size)
 #endif
 }
 
+/**
+ * Reserve memory for ION and calculate amount of reusable memory for fmem.
+ * We only reserve memory for heaps that are not reusable. However, we only
+ * support one reusable heap at the moment so we ignore the reusable flag for
+ * other than the first heap with reusable flag set. Also handle special case
+ * for video heaps (MM,FW, and MFC). Video requires heaps MM and MFC to be
+ * at a higher address than FW in addition to not more than 256MB away from the
+ * base address of the firmware. This means that if MM is reusable the other
+ * two heaps must be allocated in the same region as FW. This is handled by the
+ * mem_is_fmem flag in the platform data. In addition the MM heap must be
+ * adjacent to the FW heap for content protection purposes.
+ */
 static void __init reserve_ion_memory(void)
 {
 #if defined(CONFIG_ION_MSM) && defined(CONFIG_MSM_MULTIMEDIA_USE_ION)
 	unsigned int i;
-	unsigned int reusable_count = 0;
+	unsigned int ret;
 	unsigned int fixed_size = 0;
 	unsigned int fixed_low_size, fixed_middle_size, fixed_high_size;
 	unsigned long fixed_low_start, fixed_middle_start, fixed_high_start;
+	unsigned long cma_alignment;
+	unsigned int low_use_cma = 0;
+	unsigned int middle_use_cma = 0;
+	unsigned int high_use_cma = 0;
 
-	apq8064_fmem_pdata.size = 0;
-	apq8064_fmem_pdata.reserved_size_low = 0;
-	apq8064_fmem_pdata.reserved_size_high = 0;
-	apq8064_fmem_pdata.align = PAGE_SIZE;
 	fixed_low_size = 0;
 	fixed_middle_size = 0;
 	fixed_high_size = 0;
 
-	for (i = 0; i < ion_pdata.nr; ++i) {
-		const struct ion_platform_heap *heap =
-			&(ion_pdata.heaps[i]);
+	cma_alignment = PAGE_SIZE << max(MAX_ORDER, pageblock_order);
 
-		if (heap->type == ION_HEAP_TYPE_CP && heap->extra_data) {
-			struct ion_cp_heap_pdata *data = heap->extra_data;
-
-			reusable_count += (data->reusable) ? 1 : 0;
-
-			if (data->reusable && reusable_count > 1) {
-				pr_err("%s: Too many heaps specified as "
-					"reusable. Heap %s was not configured "
-					"as reusable.\n", __func__, heap->name);
-				data->reusable = 0;
-			}
-		}
-	}
-
-	for (i = 0; i < ion_pdata.nr; ++i) {
-		const struct ion_platform_heap *heap =
-			&(ion_pdata.heaps[i]);
+	/* We only support 1 reusable heap. Check if more than one heap
+	 * is specified as reusable and set as non-reusable if found.
+	 */
+	for (i = 0; i < apq8064_ion_pdata.nr; ++i) {
+		struct ion_platform_heap *heap =
+			&(apq8064_ion_pdata.heaps[i]);
+		int use_cma = 0;
 
 		if (heap->extra_data) {
 			int fixed_position = NOT_FIXED;
-			int mem_is_fmem = 0;
 
-			switch (heap->type) {
+			switch ((int)heap->type) {
 			case ION_HEAP_TYPE_CP:
-				mem_is_fmem = ((struct ion_cp_heap_pdata *)
-					heap->extra_data)->mem_is_fmem;
+				if (((struct ion_cp_heap_pdata *)
+				    heap->extra_data)->is_cma) {
+					heap->size = ALIGN(heap->size,
+					   cma_alignment);
+					use_cma = 1;
+				}
 				fixed_position = ((struct ion_cp_heap_pdata *)
 					heap->extra_data)->fixed_position;
 				break;
+
+			case ION_HEAP_TYPE_DMA:
+				use_cma = 1;
+				/* Purposely fall through here */
 			case ION_HEAP_TYPE_CARVEOUT:
-				mem_is_fmem = ((struct ion_co_heap_pdata *)
-					heap->extra_data)->mem_is_fmem;
 				fixed_position = ((struct ion_co_heap_pdata *)
 					heap->extra_data)->fixed_position;
 				break;
@@ -610,52 +615,97 @@ static void __init reserve_ion_memory(void)
 
 			if (fixed_position != NOT_FIXED)
 				fixed_size += heap->size;
-			else
+			else if (!use_cma)
 				reserve_mem_for_ion(MEMTYPE_EBI1, heap->size);
 
-			if (fixed_position == FIXED_LOW)
+			if (fixed_position == FIXED_LOW) {
 				fixed_low_size += heap->size;
-			else if (fixed_position == FIXED_MIDDLE)
+				low_use_cma = use_cma;
+			} else if (fixed_position == FIXED_MIDDLE) {
 				fixed_middle_size += heap->size;
-			else if (fixed_position == FIXED_HIGH)
+				middle_use_cma = use_cma;
+			} else if (fixed_position == FIXED_HIGH) {
 				fixed_high_size += heap->size;
-
-			if (mem_is_fmem)
-				apq8064_fmem_pdata.size += heap->size;
+				high_use_cma = use_cma;
+			} else if (use_cma) {
+				/*
+				 * Heaps that use CMA but are not part of the
+				 * fixed set. Create wherever.
+				 */
+				dma_declare_contiguous(
+					heap->priv,
+					heap->size,
+					0,
+					0xb0000000);
+			}
 		}
 	}
 
 	if (!fixed_size)
 		return;
 
-	if (apq8064_fmem_pdata.size) {
-		apq8064_fmem_pdata.reserved_size_low = fixed_low_size +
-								HOLE_SIZE;
-		apq8064_fmem_pdata.reserved_size_high = fixed_high_size;
-	}
-
-	fixed_size = (fixed_size + HOLE_SIZE + SECTION_SIZE - 1)
-		& SECTION_MASK;
-	apq8064_reserve_fixed_area(fixed_size);
+	/*
+	 * Given the setup for the fixed area, we can't round up all sizes.
+	 * Some sizes must be set up exactly and aligned correctly. Incorrect
+	 * alignments are considered a configuration issue
+	 */
 
 	fixed_low_start = APQ8064_FIXED_AREA_START;
-	fixed_middle_start = fixed_low_start + fixed_low_size + HOLE_SIZE;
-	fixed_high_start = fixed_middle_start + fixed_middle_size;
+	if (low_use_cma) {
+		BUG_ON(!IS_ALIGNED(fixed_low_size + HOLE_SIZE, cma_alignment));
+		BUG_ON(!IS_ALIGNED(fixed_low_start, cma_alignment));
+	} else {
+		BUG_ON(!IS_ALIGNED(fixed_low_size + HOLE_SIZE, SECTION_SIZE));
+		ret = memblock_remove(fixed_low_start,
+				fixed_low_size + HOLE_SIZE);
+		pr_info("mem_map: fixed_low_area reserved at 0x%lx with size \
+				0x%x\n", fixed_low_start,
+				fixed_low_size + HOLE_SIZE);
+		BUG_ON(ret);
+	}
 
-	for (i = 0; i < ion_pdata.nr; ++i) {
-		struct ion_platform_heap *heap = &(ion_pdata.heaps[i]);
+	fixed_middle_start = fixed_low_start + fixed_low_size + HOLE_SIZE;
+	if (middle_use_cma) {
+                BUG_ON(!IS_ALIGNED(fixed_middle_start, cma_alignment));
+                BUG_ON(!IS_ALIGNED(fixed_middle_size, cma_alignment));
+	} else {
+		BUG_ON(!IS_ALIGNED(fixed_middle_size, SECTION_SIZE));
+		ret = memblock_remove(fixed_middle_start, fixed_middle_size);
+		pr_info("mem_map: fixed_middle_area reserved at 0x%lx with \
+				size 0x%x\n", fixed_middle_start,
+				fixed_middle_size);
+		BUG_ON(ret);
+	}
+
+	fixed_high_start = fixed_middle_start + fixed_middle_size;
+	if (high_use_cma) {
+		fixed_high_size = ALIGN(fixed_high_size, cma_alignment);
+		BUG_ON(!IS_ALIGNED(fixed_high_start, cma_alignment));
+	} else {
+		/* This is the end of the fixed area so it's okay to round up */
+		fixed_high_size = ALIGN(fixed_high_size, SECTION_SIZE);
+		ret = memblock_remove(fixed_high_start, fixed_high_size);
+		pr_info("mem_map: fixed_high_area reserved at 0x%lx with size \
+				0x%x\n", fixed_high_start,
+				fixed_high_size);
+		BUG_ON(ret);
+	}
+
+	for (i = 0; i < apq8064_ion_pdata.nr; ++i) {
+		struct ion_platform_heap *heap = &(apq8064_ion_pdata.heaps[i]);
 
 		if (heap->extra_data) {
 			int fixed_position = NOT_FIXED;
 			struct ion_cp_heap_pdata *pdata = NULL;
 
-			switch (heap->type) {
+			switch ((int) heap->type) {
 			case ION_HEAP_TYPE_CP:
 				pdata =
 				(struct ion_cp_heap_pdata *)heap->extra_data;
 				fixed_position = pdata->fixed_position;
 				break;
 			case ION_HEAP_TYPE_CARVEOUT:
+			case ION_HEAP_TYPE_DMA:
 				fixed_position = ((struct ion_co_heap_pdata *)
 					heap->extra_data)->fixed_position;
 				break;
@@ -669,6 +719,14 @@ static void __init reserve_ion_memory(void)
 				break;
 			case FIXED_MIDDLE:
 				heap->base = fixed_middle_start;
+				if (middle_use_cma) {
+					ret = dma_declare_contiguous(
+						heap->priv,
+						heap->size,
+						fixed_middle_start,
+						0xa0000000);
+					WARN_ON(ret);
+				}
 				pdata->secure_base = fixed_middle_start
 								- HOLE_SIZE;
 				pdata->secure_size = HOLE_SIZE + heap->size;
@@ -1624,6 +1682,8 @@ void msm_hsusb_setup_gpio(enum usb_otg_state state)
 }
 #endif
 
+
+#define MSM_MPM_PIN_USB1_OTGSESSVLD 40
 static int msm_hsusb_vbus_power(bool on);
 static struct msm_otg_platform_data msm_otg_pdata = {
 	.mode			= USB_OTG,
@@ -1636,7 +1696,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 #ifdef CONFIG_SUPPORT_USB_SPEAKER
 	.setup_gpio		= msm_hsusb_setup_gpio,
 #endif
-	.ldo_power_collapse     = POWER_COLLAPSE_LDO1V8,
+	.mpm_otgsessvld_int	= MSM_MPM_PIN_USB1_OTGSESSVLD,
 };
 
 static int64_t dlxp_ul_get_usbid_adc(void)
@@ -6292,6 +6352,7 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_device_smd_apq8064,
 	&apq8064_device_otg,
 	&apq8064_device_hsusb_host,
+	&android_usb_device,
 	&msm_device_wcnss_wlan,
 	&apq8064_fmem_device,
 #ifdef CONFIG_ANDROID_PMEM
