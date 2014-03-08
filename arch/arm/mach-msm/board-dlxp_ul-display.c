@@ -76,7 +76,7 @@ const size_t ptype_len = ( 60 - sizeof("PANEL type = "));
 #define HDMI_PANEL_NAME "hdmi_msm"
 #define TVOUT_PANEL_NAME "tvout_msm"
 
-static int monarudo_detect_panel(const char *name)
+static int dlxp_ul_detect_panel(const char *name)
 {
 	if (!strncmp(name, HDMI_PANEL_NAME,
 		strnlen(HDMI_PANEL_NAME,
@@ -87,7 +87,7 @@ static int monarudo_detect_panel(const char *name)
 }
 
 static struct msm_fb_platform_data msm_fb_pdata = {
-	.detect_client = monarudo_detect_panel,
+	.detect_client = dlxp_ul_detect_panel,
 };
 
 static struct platform_device msm_fb_device = {
@@ -301,7 +301,7 @@ static bool backlight_gpio_is_on = true;
 static void 
 backlight_gpio_enable(bool on)
 {
-	PR_DISP_DEBUG("monarudo's %s: request on=%d currently=%d\n", __func__, on, backlight_gpio_is_on);
+	PR_DISP_DEBUG("dlxp_ul's %s: request on=%d currently=%d\n", __func__, on, backlight_gpio_is_on);
 
 	if (on == backlight_gpio_is_on)
 		return;
@@ -310,7 +310,7 @@ backlight_gpio_enable(bool on)
 		gpio_tlmm_config(GPIO_CFG(MBAT_IN_XA_XB, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 		gpio_set_value(MBAT_IN_XA_XB, on ? 1 : 0);
 	} else if (system_rev >= XC) {
-		PR_DISP_DEBUG("monarudo's %s: turning %s backlight for >= XC\n", __func__, on ? "ON" : "OFF");
+		PR_DISP_DEBUG("dlxp_ul's %s: turning %s backlight for >= XC\n", __func__, on ? "ON" : "OFF");
 		gpio_tlmm_config(GPIO_CFG(BL_HW_EN_XC_XD, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 		gpio_set_value(BL_HW_EN_XC_XD, on ? 1 : 0);
 		msleep(1);
@@ -340,7 +340,7 @@ static int mipi_dsi_panel_power(int on)
 	pr_debug("%s: on=%d\n", __func__, on);
 
 	if (!dsi_power_on) {
-		PR_DISP_DEBUG("monarudo's %s: powering on.\n", __func__);
+		PR_DISP_DEBUG("dlxp_ul's %s: powering on.\n", __func__);
 		reg_lvs5 = regulator_get(&msm_mipi_dsi1_device.dev,
 				"dsi1_vddio");
 		if (IS_ERR_OR_NULL(reg_lvs5)) {
@@ -382,7 +382,7 @@ static int mipi_dsi_panel_power(int on)
 
 	if (on) {
 		if (!first_init) {
-			PR_DISP_DEBUG("monarudo's %s: turning on, previously initialized\n", __func__);
+			PR_DISP_DEBUG("dlxp_ul's %s: turning on, previously initialized\n", __func__);
 			rc = regulator_set_optimum_mode(reg_l2, 100000);
 			if (rc < 0) {
 				pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
@@ -411,7 +411,7 @@ static int mipi_dsi_panel_power(int on)
 
 			msm_xo_mode_vote(wa_xo, MSM_XO_MODE_OFF);
 		} else {
-			PR_DISP_DEBUG("monarudo's %s: turning on, initializing\n", __func__);
+			PR_DISP_DEBUG("dlxp_ul's %s: turning on, initializing\n", __func__);
 			/*Regulator needs enable first time*/
 			rc = regulator_enable(reg_lvs5);
 			if (rc) {
@@ -434,7 +434,7 @@ static int mipi_dsi_panel_power(int on)
 			msm_xo_mode_vote(wa_xo, MSM_XO_MODE_OFF);
 		}
 	} else {
-		PR_DISP_DEBUG("monarudo's %s: turning off\n", __func__);
+		PR_DISP_DEBUG("dlxp_ul's %s: turning off\n", __func__);
 		backlight_gpio_off();
 
 		gpio_set_value(LCD_RST, 0);
@@ -464,7 +464,7 @@ static struct mipi_dsi_platform_data mipi_dsi_pdata = {
 	.dsi_power_save = mipi_dsi_panel_power,
 };
 
-static struct mipi_dsi_panel_platform_data *mipi_monarudo_pdata;
+static struct mipi_dsi_panel_platform_data *mipi_dlxp_ul_pdata;
 
 static struct dsi_cmd_desc *video_on_cmds = NULL;
 static struct dsi_cmd_desc *display_on_cmds = NULL;
@@ -566,7 +566,7 @@ static struct dsi_cmd_desc sony_display_off_cmds[] = {
 static struct i2c_client *blk_pwm_client;
 static struct dcs_cmd_req cmdreq;
 
-static int monarudo_lcd_on(struct platform_device *pdev)
+static int dlxp_ul_lcd_on(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 
@@ -598,7 +598,7 @@ static int monarudo_lcd_on(struct platform_device *pdev)
 	return 0;
 }
 
-static int monarudo_lcd_off(struct platform_device *pdev)
+static int dlxp_ul_lcd_off(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 
@@ -617,10 +617,10 @@ static int monarudo_lcd_off(struct platform_device *pdev)
 }
 
 
-static int __devinit monarudo_lcd_probe(struct platform_device *pdev)
+static int __devinit dlxp_ul_lcd_probe(struct platform_device *pdev)
 {
 	if (pdev->id == 0) {
-		mipi_monarudo_pdata = pdev->dev.platform_data;
+		mipi_dlxp_ul_pdata = pdev->dev.platform_data;
 		return 0;
 	}
 
@@ -630,7 +630,7 @@ static int __devinit monarudo_lcd_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int monarudo_display_on(struct platform_device *pdev)
+static int dlxp_ul_display_on(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 
@@ -653,7 +653,7 @@ static int monarudo_display_on(struct platform_device *pdev)
 	return 0;
 }
 
-static int monarudo_display_off(struct platform_device *pdev)
+static int dlxp_ul_display_off(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 
@@ -679,7 +679,7 @@ static int monarudo_display_off(struct platform_device *pdev)
 #define BRI_SETTING_DEF		 142
 #define BRI_SETTING_MAX		 255
 
-static unsigned char monarudo_shrink_pwm(int val)
+static unsigned char dlxp_ul_shrink_pwm(int val)
 {
 	unsigned char shrink_br = BRI_SETTING_MAX;
 
@@ -701,11 +701,11 @@ static unsigned char monarudo_shrink_pwm(int val)
 	return shrink_br;
 }
 
-static void monarudo_set_backlight(struct msm_fb_data_type *mfd)
+static void dlxp_ul_set_backlight(struct msm_fb_data_type *mfd)
 {
 	int rc;
 
-	write_display_brightness[2] = monarudo_shrink_pwm((unsigned char)(mfd->bl_level));
+	write_display_brightness[2] = dlxp_ul_shrink_pwm((unsigned char)(mfd->bl_level));
 
 	if (resume_blk) {
 		resume_blk = false;
@@ -749,24 +749,24 @@ static void monarudo_set_backlight(struct msm_fb_data_type *mfd)
 }
 
 static struct platform_driver this_driver = {
-	.probe  = monarudo_lcd_probe,
+	.probe  = dlxp_ul_lcd_probe,
 	.driver = {
-		.name   = "mipi_monarudo",
+		.name   = "mipi_dlxp_ul",
 	},
 };
 
-static struct msm_fb_panel_data monarudo_panel_data = {
-	.on	= monarudo_lcd_on,
-	.off	= monarudo_lcd_off,
-	.set_backlight = monarudo_set_backlight,
-	.late_init = monarudo_display_on,
-	.early_off = monarudo_display_off,
+static struct msm_fb_panel_data dlxp_ul_panel_data = {
+	.on	= dlxp_ul_lcd_on,
+	.off	= dlxp_ul_lcd_off,
+	.set_backlight = dlxp_ul_set_backlight,
+	.late_init = dlxp_ul_display_on,
+	.early_off = dlxp_ul_display_off,
 };
 
 static struct msm_panel_info pinfo;
 static int ch_used[3] = {0};
 
-int mipi_monarudo_device_register(struct msm_panel_info *pinfo,
+int mipi_dlxp_ul_device_register(struct msm_panel_info *pinfo,
 					u32 channel, u32 panel)
 {
 	struct platform_device *pdev = NULL;
@@ -777,14 +777,14 @@ int mipi_monarudo_device_register(struct msm_panel_info *pinfo,
 
 	ch_used[channel] = TRUE;
 
-	pdev = platform_device_alloc("mipi_monarudo", (panel << 8)|channel);
+	pdev = platform_device_alloc("mipi_dlxp_ul", (panel << 8)|channel);
 	if (!pdev)
 		return -ENOMEM;
 
-	monarudo_panel_data.panel_info = *pinfo;
+	dlxp_ul_panel_data.panel_info = *pinfo;
 
-	ret = platform_device_add_data(pdev, &monarudo_panel_data,
-		sizeof(monarudo_panel_data));
+	ret = platform_device_add_data(pdev, &dlxp_ul_panel_data,
+		sizeof(dlxp_ul_panel_data));
 	if (ret) {
 		pr_err("%s: platform_device_add_data failed!\n", __func__);
 		goto err_device_put;
@@ -887,7 +887,7 @@ static int __init mipi_video_sharp_init(void)
 	pinfo.mipi.dsi_phy_db = &dsi_video_mode_phy_db;
 	pinfo.mipi.esc_byte_ratio = 2;
 
-	ret = mipi_monarudo_device_register(&pinfo, MIPI_DSI_PRIM,
+	ret = mipi_dlxp_ul_device_register(&pinfo, MIPI_DSI_PRIM,
 						MIPI_DSI_PANEL_FWVGA_PT);
 	if (ret)
 		pr_err("%s: failed to register device!\n", __func__);
@@ -977,7 +977,7 @@ static int __init mipi_video_sony_init(void)
 	pinfo.mipi.dsi_phy_db = &dsi_video_mode_phy_db;
 	pinfo.mipi.esc_byte_ratio = 2;
 
-	ret = mipi_monarudo_device_register(&pinfo, MIPI_DSI_PRIM,
+	ret = mipi_dlxp_ul_device_register(&pinfo, MIPI_DSI_PRIM,
 						MIPI_DSI_PANEL_FWVGA_PT);
 	if (ret)
 		pr_err("%s: failed to register device!\n", __func__);
@@ -1039,7 +1039,7 @@ void __init dlxp_ul_init_fb(void)
 #endif
 }
 
-static int __init monarudo_panel_init(void)
+static int __init dlxp_ul_panel_init(void)
 {
 	int ret;
 
@@ -1068,4 +1068,4 @@ static int __init monarudo_panel_init(void)
 
 	return platform_driver_register(&this_driver);
 }
-device_initcall_sync(monarudo_panel_init);
+device_initcall_sync(dlxp_ul_panel_init);
