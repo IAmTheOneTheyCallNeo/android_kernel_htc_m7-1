@@ -23,7 +23,7 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/otg.h>
 #include <linux/wakelock.h>
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 #include <mach/board.h>
 #endif
 #include <linux/pm_qos.h>
@@ -219,7 +219,7 @@ struct msm_otg_platform_data {
 	unsigned int mpm_otgsessvld_int;
 	bool mhl_enable;
 	bool disable_reset_on_disconnect;
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 	char *ldo_3v3_name;
 	char *ldo_1v8_name;
         bool enable_dcd;
@@ -228,7 +228,7 @@ struct msm_otg_platform_data {
 	bool enable_lpm_on_dev_suspend;
 	bool core_clk_always_on_workaround;
 	struct msm_bus_scale_pdata *bus_scale_table;
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 	int reset_phy_before_lpm;
 	void (*usb_uart_switch)(int uart);
 	int ldo_power_collapse;
@@ -355,13 +355,13 @@ struct msm_otg {
 #endif
 	enum usb_chg_state chg_state;
 	enum usb_chg_type chg_type;
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 	u8 dcd_retries;
 #else
 	unsigned dcd_time;
 #endif
 	struct wake_lock wlock;
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 	struct wake_lock usb_otg_wlock;
 	struct wake_lock cable_detect_wlock;
 #endif
@@ -399,7 +399,7 @@ struct msm_otg {
 #if !defined(CONFIG_MACH_M7_UL) && !defined(CONFIG_MACH_MONARUDO) && !defined(CONFIG_MACH_T6_UL)
 #define CLOCKS_DOWN			BIT(3)
 #endif
-#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL)
+#if defined(CONFIG_MACH_M7_UL) || defined(CONFIG_MACH_MONARUDO) || defined(CONFIG_MACH_T6_UL) || defined(CONFIG_MACH_DLXP_UL)
 	struct work_struct notifier_work;
 	enum usb_connect_type connect_type;
 	int connect_type_ready;
