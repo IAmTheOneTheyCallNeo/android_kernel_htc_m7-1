@@ -209,6 +209,35 @@ config ARCH_APQ8064
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
 
+config ARCH_APQ8064_M7
+	bool "APQ8064_M7"
+	select ARCH_MSM_KRAITMP
+	select GPIO_MSM_V2
+	select ARM_GIC
+	select CPU_V7
+	select MSM_SCM if SMP
+	select MSM_GPIOMUX
+	select MSM_REMOTE_SPINLOCK_SFPB
+	select MSM_PIL
+	select MSM_QDSP6_APR
+	select MSM_QDSP6_CODECS
+	select MSM_AUDIO_QDSP6 if SND_SOC
+	select MULTI_IRQ_HANDLER
+	select MSM_RPM
+	select MSM_SPM_V2
+	select MSM_L2_SPM
+	select MSM_PM8X60 if PM
+	select CPU_HAS_L2_PMU
+	select HOLES_IN_ZONE if SPARSEMEM
+	select CLEANCACHE
+	select QCACHE
+	select MIGHT_HAVE_PCI
+	select ARCH_SUPPORTS_MSI
+	select ARM_HAS_SG_CHAIN
+	select MSM_KRAIT_WFE_FIXUP
+	select MSM_CPU_PWRCTL
+	select MSM_IOMMU_GPU_SYNC
+
 config ARCH_MSM8974
 	bool "MSM8974"
 	select ARCH_MSM_KRAITMP
@@ -257,11 +286,65 @@ config MACH_JET
 	help
 	  Support for the HTC Jet
 
+config MACH_JEWEL_DD
+        depends on ARCH_MSM8960
+        bool "Jel_dd"
+        help
+          Support for the HTC Jewel_DD
+
 config MACH_VALENTE_WX
 	depends on ARCH_MSM8960
 	bool "Valente#WX"
 	help
 	  Support for the HTC Valente#WX
+
+config MACH_VALENTE_WX_C9
+	depends on ARCH_MSM8960
+	bool "Valente#WX_C9"
+	help
+	  Support for the HTC Valente#WX_C9
+
+config MACH_K2_CL
+	depends on ARCH_MSM8930
+	bool "K2_CL"
+	help
+	  Support for the HTC K2_#CL
+
+config MACH_K2_PLC_CL
+	depends on ARCH_MSM8930
+	bool "K2_PLC_CL"
+	help
+	  Support for the HTC K2_PLC#CL
+
+config MACH_K2_U
+	depends on ARCH_MSM8930
+	bool "K2_U"
+	help
+	  Support for the HTC K2_U
+
+config MACH_K2_UL
+	depends on ARCH_MSM8930
+	bool "K2_UL"
+	help
+	  Support for the HTC K2_UL
+
+config MACH_ZIP_CL_MI2S_DATA_SWITCH
+	depends on MACH_ZIP_CL
+	bool "ZIP_CL_MI2S_DATA_SWITCH"
+	help
+	  Support for the workaround for ZIP_CL MI2S data Input/Output switch
+
+config MACH_EVITA_UTL
+        depends on ARCH_MSM8960
+        bool "Evita#UTL"
+        help
+          Support for the HTC Evita#UTL
+
+config MACH_OPERAUL
+	depends on ARCH_MSM8930
+	bool "OPERAUL"
+	help
+	  Support for the HTC OPERAUL
 
 config ARCH_FSM9XXX
 	bool "FSM9XXX"
@@ -1074,12 +1157,6 @@ config HTC_ONMODE_CHARGING
 	help
 		support on mode charing icon
 
-config BUILD_EDIAG
-	bool "Build in embedded diag fixes"
-	default n
-	help
-	  For embedded diag we need to do some additional fixes.
-
 config HTC_FD_MONITOR
 	bool "fd operation monitor mechanism"
 	default n
@@ -1382,6 +1459,12 @@ config MSM_SMD_DEBUG
 	help
 	  Support for debugging the SMD for communication
 	  between the ARM9 and ARM11
+
+config MSM_SEND_SIGNAL_DEBUG
+        bool "MSM send_signal debug support"
+        help
+          This option enables kernel debug log and dump_stack
+          if any processes send signal to assinged processes
 
 config MSM_SDIO_AL
 	depends on ((ARCH_MSM7X30 || MACH_MSM8X60_FUSN_FFA || MACH_TYPE_MSM8X60_FUSION) && HAS_WAKELOCK)
@@ -2222,14 +2305,6 @@ config MSM_PM8X60
 	depends on PM
 	bool
 
-config MSM_EVENT_TIMER
-	bool "Event timer"
-	help
-		This option enables a modules that manages a list of event timers that
-		need to be monitored by the PM. The enables the PM code to monitor
-		events that require the core to be awake and ready to handle the
-		event.
-
 config MSM_NOPM
 	default y if !PM
 	bool
@@ -2291,6 +2366,11 @@ config MSM_ETM
 	select MSM_JTAG
 	help
 	  Enables embedded trace collection on MSM8660
+
+config MSM_SLEEP_STATS
+	bool "Enable exporting of MSM sleep stats to userspace"
+	depends on CPU_IDLE
+	default n
 
 config MSM_SLEEP_STATS_DEVICE
 	bool "Enable exporting of MSM sleep device stats to userspace"
@@ -2481,7 +2561,6 @@ config MSM_OCMEM
 
 config MSM_RTB
 	bool "Register tracing"
-	depends on (!METRICO_TP || METRICO_TP!=y)
 	help
 	  Add support for logging different events to a small uncached
 	  region. This is designed to aid in debugging reset cases where the
@@ -2586,14 +2665,6 @@ config MSM_L2_ERP_2BIT_PANIC
 	  For production builds, it may be acceptable to say 'N' here, since
 	  an uncorrectable error might not necessarily cause further problems.
 
-config IGNORE_L2_FALSE_ALARM
-	bool "Ignore harmless L2 port error"
-	depends on MSM_CACHE_ERP
-	default y
-	help
-	  L2 cache will sometimes generate port error which is consider harmless.
-	  Ignore the error if trigger rate is low.
-
 config MSM_DCVS
 	bool "Use MSM DCVS for CPU/GPU Frequency control"
 	depends on MSM_SCM
@@ -2656,9 +2727,87 @@ config MSM_HSIC_SYSMON_TEST
 config MACH_MONARUDO
 	depends on ARCH_APQ8064
 	bool "APQ8064 MONARUDO"
-	select FB_MSM_MIPI_DSI
 	help
 	  Support for the HTC APQ8064 MONARUDO.
+
+config MACH_DELUXE_J
+        depends on ARCH_APQ8064
+        bool "APQ8064 DELUXE_J"
+        help
+          Support for the HTC APQ8064 DELUXE_J.
+
+config MACH_DELUXE_UB1
+        depends on ARCH_APQ8064
+        bool "APQ8064 DELUXE_UB1"
+        help
+          Support for the HTC APQ8064 DELUXE_UB1.
+
+config MACH_DELUXE_U
+        depends on ARCH_APQ8064
+        bool "APQ8064 DELUXE_U"
+        help
+          Support for the HTC APQ8064 DELUXE_U.
+
+config MACH_DELUXE_UL
+        depends on ARCH_APQ8064
+        bool "APQ8064 DELUXE_UL"
+        help
+          Support for the HTC APQ8064 DELUXE_UL.
+
+config MACH_IMPRESSION_J
+        depends on ARCH_APQ8064
+        bool "APQ8064 IMPRESSION_J"
+        help
+          Support for the HTC APQ8064 IMPRESSION_J.
+
+config MACH_M7_UL
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_UL"
+        help
+          Support for the HTC APQ8064 M7_UL.
+
+config MACH_M7_U
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_U"
+        help
+          Support for the HTC APQ8064 M7_U.
+
+config MACH_M7_WLS
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_WLS"
+        help
+          Support for the HTC APQ8064 M7_WLS.
+
+config MACH_M7_WLV
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_WLV"
+        help
+          Support for the HTC APQ8064 M7_WLV.
+
+config MACH_M7_WLJ
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_WLJ"
+        help
+          Support for the HTC APQ8064 M7_WLJ.
+
+
+config MACH_M7_DCG
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_DCG"
+        help
+          Support for the HTC APQ8064 M7_DCG.
+
+config MACH_M7_DUG
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_DUG"
+        help
+          Support for the HTC APQ8064 M7_DUG.
+
+config MACH_M7_EVM
+        depends on ARCH_APQ8064
+        bool "APQ8064 M7_EVM"
+        help
+          Support for the HTC APQ8064 M7_EVM.
 
 config MACH_DLXP_UL
 	depends on ARCH_APQ8064
@@ -2666,37 +2815,17 @@ config MACH_DLXP_UL
 	help
 	  Support for the HTC APQ8064 DLXP_UL.
 
-config MACH_M7_UL
-	depends on ARCH_APQ8064
-	bool "APQ8064 M7_UL"
-	select FB_MSM_MIPI_DSI
-	help
-	  Support for the HTC APQ8064 M7_UL.
-
-config MACH_M7_DXG
-        depends on ARCH_APQ8064
-        bool "APQ8064 M7_DXG"
-        help
-          Support for the HTC APQ8064 M7_DXG.
-
-config MACH_T6_DXG
-        depends on ARCH_APQ8064
-        bool "APQ8064 T6_DXG"
-        help
-          Support for the HTC APQ8064 T6_DXG.
-
-config MACH_T6_UL
-	depends on ARCH_APQ8064
-	bool "APQ8064 T6_UL"
-	select FB_MSM_MIPI_DSI
-	help
-	  Support for the HTC APQ8064 T6_UL.
-
 config QSC_MODEM
         default n
         bool "QMC QSC MODEM"
         help
           Support for the QMC QSC Modem.
+
+config MACH_VILLEC2
+        depends on ARCH_MSM8X60
+        bool "VILLEC2"
+        help
+          Support for the HTC VILLEC2 device.
 
 config HTC_HEADSET_ONE_WIRE
 	tristate "HTC 1-wire headset detection driver"
@@ -2753,9 +2882,5 @@ config MSM_CPU_PWRCTL
 	  stand alone power collapse operation. Selecting this option
 	  ensures that they are always off.
 
-config IOEXTENDER
-	default n
-	bool "Enable IOEXTENDER feature"
-	help
-	 To support IOEXTENDER feature
 endif
+

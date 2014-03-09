@@ -2177,8 +2177,18 @@ static int sd_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 				ret = mmc_blk_end_packed_req(mq, mq_rq);
 				break;
 			} else {
+#ifdef CONFIG_MMC_PERF_PROFILING
+				endrq_t = ktime_get();
+#endif
 				ret = blk_end_request(req, 0,
 						brq->data.bytes_xfered);
+#ifdef CONFIG_MMC_PERF_PROFILING
+				endrq_diff = ktime_sub(ktime_get(), endrq_t);
+				if (ktime_to_us(endrq_diff) > 4000)
+					pr_info("%s (%s), cmd(%d) s_sec %d, size %d, end request time = %lld us\n",
+					mmc_hostname(card->host), current->comm, brq->cmd.opcode,
+					 brq->cmd.arg , brq->data.blocks, ktime_to_us(endrq_diff));
+#endif
 			}
 
 			if (status == MMC_BLK_SUCCESS && ret) {

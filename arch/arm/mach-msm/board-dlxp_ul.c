@@ -1683,7 +1683,6 @@ void msm_hsusb_setup_gpio(enum usb_otg_state state)
 #endif
 
 
-#define MSM_MPM_PIN_USB1_OTGSESSVLD 40
 static int msm_hsusb_vbus_power(bool on);
 static struct msm_otg_platform_data msm_otg_pdata = {
 	.mode			= USB_OTG,
@@ -1696,7 +1695,7 @@ static struct msm_otg_platform_data msm_otg_pdata = {
 #ifdef CONFIG_SUPPORT_USB_SPEAKER
 	.setup_gpio		= msm_hsusb_setup_gpio,
 #endif
-	.mpm_otgsessvld_int	= MSM_MPM_PIN_USB1_OTGSESSVLD,
+	.ldo_power_collapse     = POWER_COLLAPSE_LDO1V8,
 };
 
 static int64_t dlxp_ul_get_usbid_adc(void)

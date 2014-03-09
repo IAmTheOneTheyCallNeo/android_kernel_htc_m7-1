@@ -22,6 +22,8 @@
 *.lst
 *.symtypes
 *.order
+*.img
+*.txt
 modules.builtin
 *.elf
 *.bin
